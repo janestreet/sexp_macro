@@ -132,16 +132,15 @@ let%expect_test "macros" =
     Actual output does not agree with reference output.
     Actual:
     (raised (
-      "Error in file DIR/include.sexp"
-      (Unix.Unix_error
-       "File name too long"
-       open
-       "((filename DIR/include.sexp) (mode (O_RDONLY O_CLOEXEC)) (perm 0o0))")))
+      "Error in file DIR/include.sexp" (
+        Unix.Unix_error
+        "File name too long"
+        open
+        "((filename DIR/include.sexp) (mode (O_RDONLY O_CLOEXEC)) (perm 0o0))")))
     Reference:
     (raised (
-      "Error in file DIR/include.sexp"
-      (Sys_error
-       "DIR/include.sexp: File name too long")))
+      "Error in file DIR/include.sexp" (
+        Sys_error "DIR/include.sexp: File name too long")))
 
     (test "parsing error 1")
     Actual output agrees with reference output.
@@ -151,14 +150,14 @@ let%expect_test "macros" =
     Actual output does not agree with reference output.
     Actual:
     (raised (
-      "Error in file DIR/include.sexp"
-      ("Reader.read_sexp got unexpected eof" (
-        t (
-          (state                 In_use)
-          (available             0)
-          (pos                   0)
-          (close_may_destroy_buf Yes)
-          (close_finished        Empty))))))
+      "Error in file DIR/include.sexp" (
+        "Reader.read_sexp got unexpected eof" (
+          t (
+            (state                 In_use)
+            (available             0)
+            (pos                   0)
+            (close_may_destroy_buf Yes)
+            (close_finished        Empty))))))
     Reference:
     (raised (
       Failure

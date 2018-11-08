@@ -69,7 +69,13 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     loop str 0
   in
   let replace dir sexp =
-    sexp |> sexp_to_string |> replace ~sub:"/./" ~by:"/" |> replace ~sub:dir ~by:"DIR"
+    sexp
+    |> sexp_to_string
+    |> replace ~sub:"/./" ~by:"/"
+    |> replace ~sub:dir ~by:"DIR"
+    |> Sexp.of_string
+    (* normalize the layout (depends on the length of [dir]) *)
+    |> sexp_to_string
   in
   let print_header description files =
     let files =
@@ -745,9 +751,7 @@ let%expect_test _ =
         (include.sexp ((:let err () error) (foo bar (trigger (:use err))))))))
     (raised (
       Sexp_macro.Macro_conv_error (
-        (Of_sexp_error
-         DIR/include.sexp:1:29
-         Exit)
+        (Of_sexp_error DIR/include.sexp:1:29 Exit)
         (trigger  (:use    err))
         (expanded (trigger error)))))
 
@@ -759,17 +763,13 @@ let%expect_test _ =
         (include.sexp ((:let err () error) (foo bar (trigger (:use err))))))))
     ((Error (
        (Sexp_macro.Macro_conv_error (
-         (Of_sexp_error
-          DIR/include.sexp:1:29
-          Exit)
+         (Of_sexp_error DIR/include.sexp:1:29 Exit)
          (trigger  (:use    err))
          (expanded (trigger error))))
        (trigger (:use err))))
      (Error (
        (Sexp_macro.Macro_conv_error (
-         (Of_sexp_error
-          DIR/include.sexp:1:29
-          Exit)
+         (Of_sexp_error DIR/include.sexp:1:29 Exit)
          (trigger  (:use    err))
          (expanded (trigger error))))
        (trigger (:use err)))))
@@ -778,24 +778,21 @@ let%expect_test _ =
       files (
         (input.sexp   ((:include include.sexp)))
         (include.sexp ((:include include.sexp))))))
-    (raised (
-      "Sexp_macro__Macro.Include_loop_detected(\"DIR/include.sexp\")"))
+    (raised ("Sexp_macro__Macro.Include_loop_detected(\"DIR/include.sexp\")"))
 
     (test "sneaky include loop" (
       files (
         (input.sexp   ((:include include.sexp)))
         (include.sexp ((:include ././include.sexp))))))
     (raised (
-      "Error in file DIR/include.sexp"
-      (Sys_error
-       "DIR/include.sexp: File name too long")))
+      "Error in file DIR/include.sexp" (
+        Sys_error "DIR/include.sexp: File name too long")))
 
     (test "parsing error 1" (
       files ((input.sexp ((:include include.sexp) ())) (include.sexp ")"))))
     (raised (
       Sexplib.Sexp.Parse_error (
-        (err_msg
-         "DIR/include.sexp: unexpected character: ')'")
+        (err_msg "DIR/include.sexp: unexpected character: ')'")
         (text_line     1)
         (text_char     0)
         (global_offset 0)
