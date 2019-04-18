@@ -152,12 +152,10 @@ let%expect_test "macros" =
     (raised (
       "Error in file DIR/include.sexp" (
         "Reader.read_sexp got unexpected eof" (
-          t (
-            (state                 In_use)
-            (available             0)
-            (pos                   0)
-            (close_may_destroy_buf Yes)
-            (close_finished        Empty))))))
+          reader (
+            (file_descr _)
+            (info       DIR/include.sexp)
+            (kind       File))))))
     Reference:
     (raised (
       Failure
