@@ -1,4 +1,5 @@
-# Sexp_macro
+"Sexp_macro"
+============
 
 This library introduces sexp macros. They allow user to define and use
 constants and simple functions in sexp files, include one sexp file in
