@@ -96,6 +96,7 @@ end
 module Loader (S : Sexp_loader) : sig
   val load_sexp_conv : string -> (Sexp.t -> 'a) -> 'a annot_conv S.Monad.t
   val load_sexps_conv : string -> (Sexp.t -> 'a) -> 'a annot_conv list S.Monad.t
+  val included_files : string -> string list S.Monad.t
 end
 
 val add_error_location : string -> exn -> exn

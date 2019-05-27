@@ -66,3 +66,7 @@ let gen_load_sexps ~file ~a_of_sexp =
 ;;
 
 let load_sexps file a_of_sexp = gen_load_sexps ~file ~a_of_sexp
+
+let included_files file =
+  Deferred.Or_error.try_with (fun () -> Macro_loader.included_files file)
+;;

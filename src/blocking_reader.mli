@@ -29,3 +29,7 @@ val load_sexp_conv_exn : string -> (Sexp.t -> 'a) -> 'a
 (** [load_sexps_conv_exn file f] like {!load_sexps_conv}, but raises an
     exception in case of conversion error. *)
 val load_sexps_conv_exn : string -> (Sexp.t -> 'a) -> 'a list
+
+(** [included_files] returns the names of all files that will be loaded as result of macro
+    expansion. This includes the file itself. *)
+val included_files : string -> string list

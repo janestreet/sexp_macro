@@ -7,6 +7,7 @@ open Printf
 module type Load = sig
   val load_sexp_conv_exn : string -> (Sexp.t -> 'a) -> 'a
   val load_sexps_conv : string -> (Sexp.t -> 'a) -> 'a Sexp.Annotated.conv list
+  val included_files : string -> string list
 end
 
 let () =
@@ -74,9 +75,9 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     |> replace ~sub:"/./" ~by:"/"
     |> replace ~sub:dir ~by:"DIR"
     |> Sexp.of_string
-    (* normalize the layout (depends on the length of [dir]) *)
-    |> sexp_to_string
+    (* reparse to normalize the layout (depends on the length of [dir]) *)
   in
+  let replace_to_string dir sexp = sexp_to_string (replace dir sexp) in
   let print_header description files =
     let files =
       List.map
@@ -106,10 +107,13 @@ let make ?(reference : (module Load) option) (module Load : Load) =
   in
   let check ?(f = id) description files =
     with_files files ~f:(fun dir ->
+      let filename = Filename.concat dir "input.sexp" in
       let output load =
-        match load (Filename.concat dir "input.sexp") f with
-        | output -> [%message (output : Sexp.t)] |> sexp_to_string
-        | exception exn -> replace dir [%sexp "raised", (exn : exn)]
+        match Load.included_files filename, load filename f with
+        | included_files, output ->
+          let included_files = replace dir ([%sexp_of: string list] included_files) in
+          [%message (output : Sexp.t) (included_files : Sexp.t)] |> sexp_to_string
+        | exception exn -> replace_to_string dir [%sexp "raised", (exn : exn)]
       in
       let actual = output Load.load_sexp_conv_exn in
       match reference with
@@ -128,7 +132,7 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     with_files files ~f:(fun dir ->
       let output load =
         let results = load (Filename.concat dir "input.sexp") f in
-        replace dir [%sexp (results : _ Sexp.Annotated.conv list)]
+        replace_to_string dir [%sexp (results : _ Sexp.Annotated.conv list)]
       in
       let actual = output Load.load_sexps_conv in
       match reference with
@@ -158,6 +162,13 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     [ "input.sexp", "(:include include/a.sexp)"
     ; "include/a.sexp", "(:include b.sexp)"
     ; "include/b.sexp", "(this is include/b)"
+    ];
+  check
+    "not all files included"
+    [ "input.sexp", "(:include include/a.sexp)"
+    ; "include/a.sexp", "(:include b.sexp)"
+    ; "include/b.sexp", "(this is include/b)"
+    ; "include/c.sexp", "(this is include/c)"
     ];
   check
     "hello world"
@@ -397,14 +408,25 @@ let%expect_test _ =
               (:use x)
               (:use x)))))
         (include.sexp (0001 0002 0003)))))
-    (output ((field1 value1) (field2 (0001 0002 0003 0004 0005)) (field3 ayzyz)))
+    ((output ((field1 value1) (field2 (0001 0002 0003 0004 0005)) (field3 ayzyz)))
+     (included_files (DIR/include.sexp DIR/defs.sexp DIR/input.sexp)))
 
     (test "include chain with subdirectories" (
       files (
         (input.sexp     ((:include include/a.sexp)))
         (include/a.sexp ((:include b.sexp)))
         (include/b.sexp ((this is include/b))))))
-    (output (this is include/b))
+    ((output (this is include/b))
+     (included_files (DIR/include/b.sexp DIR/include/a.sexp DIR/input.sexp)))
+
+    (test "not all files included" (
+      files (
+        (input.sexp     ((:include include/a.sexp)))
+        (include/a.sexp ((:include b.sexp)))
+        (include/b.sexp ((this is include/b)))
+        (include/c.sexp ((this is include/c))))))
+    ((output (this is include/b))
+     (included_files (DIR/include/b.sexp DIR/include/a.sexp DIR/input.sexp)))
 
     (test "hello world" (
       files (
@@ -423,7 +445,8 @@ let%expect_test _ =
           (:concat
             (:use a)
             (:use b))))))))
-    (output "hello world")
+    ((output "hello world")
+     (included_files (DIR/template.sexp DIR/defs.sexp DIR/input.sexp)))
 
     (test "chained let" (
       files ((
@@ -431,7 +454,7 @@ let%expect_test _ =
           (:let f (x) (:use x))
           (:let g (x) (:use f (x (:use x))))
           (:use g (x bla)))))))
-    (output bla)
+    ((output bla) (included_files (DIR/input.sexp)))
 
     (test "nested let1" (
       files ((
@@ -445,7 +468,7 @@ let%expect_test _ =
             (:use g (y (:use x)))
             (:use g (y (:use x))))
           (:concat (:use f (x x))))))))
-    (output xxxx)
+    ((output xxxx) (included_files (DIR/input.sexp)))
 
     (test "nested let2" (
       files ((
@@ -458,7 +481,7 @@ let%expect_test _ =
               (:use y))
             (:use g (y (:use x))))
           ((:use f (x bla))))))))
-    (output (bla bla))
+    ((output (bla bla)) (included_files (DIR/input.sexp)))
 
     (test "argument list scoping" (
       files ((
@@ -473,11 +496,11 @@ let%expect_test _ =
           (:use f
             (b (:use a))
             (a (:use b))))))))
-    (output ab)
+    ((output ab) (included_files (DIR/input.sexp)))
 
     (test "empty argument" (
       files ((input.sexp ((:let f (x) (:use x) bla) (:use f (x)))))))
-    (output bla)
+    ((output bla) (included_files (DIR/input.sexp)))
 
     (test scoping1 (
       files (
@@ -488,7 +511,8 @@ let%expect_test _ =
             (x)
             ((:use x)
              (:use y))))))))
-    (output (bla1 bla2))
+    ((output         (bla1             bla2))
+     (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test scoping2 (
       files (
@@ -500,7 +524,8 @@ let%expect_test _ =
           (:let x () foo)
           ((:use g)
            (:use x))))))))
-    (output (bar foo))
+    ((output         (bar              foo))
+     (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test scoping3 (
       files (
@@ -515,7 +540,7 @@ let%expect_test _ =
               (:use greeting)
               (:use name)))
           (:let hi (name) (:use greet (greeting "hi ") (name (:use name)))))))))
-    (output "hi jane")
+    ((output "hi jane") (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test scoping4 (
       files (
@@ -531,14 +556,15 @@ let%expect_test _ =
             (:use x)
             (:use y))
           (:use f (y (:use g)))))))))
-    (output (foo bar foo))
+    ((output (foo bar foo)) (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test "argument shadowing" (
       files (
         (input.sexp ((:include include.sexp) (:use f (x foo))))
         (include.sexp ((
           :let f (x) (:let g (x) (:use x)) ((:use x) (:use g (x bar)))))))))
-    (output (foo bar))
+    ((output         (foo              bar))
+     (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test "high order function attempt" (
       files (
@@ -577,7 +603,7 @@ let%expect_test _ =
      (files (
        (input.sexp ((:include include.sexp) (:use f (x x))))
        (include.sexp ((:let f (x) (:let g () (:use x)) ()))))))
-    (output ())
+    ((output ()) (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test "malformed concat" (
       files (
@@ -697,7 +723,7 @@ let%expect_test _ =
           (:include include.sexp)
           (:use     x)))
         (include.sexp ((:let x () 1))))))
-    (output 1)
+    ((output 1) (included_files (DIR/include.sexp DIR/input.sexp)))
 
     (test "malformed concat" (files ((input.sexp ((:concat (a b)))))))
     (raised (
@@ -807,7 +833,7 @@ let%expect_test _ =
     (test "value is not interpreted as code" (
       files ((
         input.sexp ((:let id (x) (:use x)) (:use id (x ((:concat :us e) y))))))))
-    (output (:use y)) |}]
+    ((output (:use y)) (included_files (DIR/input.sexp))) |}]
 ;;
 
 let%expect_test _ =

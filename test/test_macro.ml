@@ -17,6 +17,11 @@ let%expect_test "macros" =
         Thread_safe.block_on_async_exn (fun () ->
           Sexp_macro.Macro_loader.load_sexps_conv file f)
       ;;
+
+      let included_files file =
+        Thread_safe.block_on_async_exn (fun () ->
+          Sexp_macro.Macro_loader.included_files file)
+      ;;
     end);
   [%expect
     {|
@@ -24,6 +29,9 @@ let%expect_test "macros" =
     Actual output agrees with reference output.
 
     (test "include chain with subdirectories")
+    Actual output agrees with reference output.
+
+    (test "not all files included")
     Actual output agrees with reference output.
 
     (test "hello world")

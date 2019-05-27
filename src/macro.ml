@@ -500,6 +500,11 @@ module Loader (S : Sexp_loader) = struct
     | [ a ] -> M.return a
     | _ -> assert false
   ;;
+
+  let included_files file =
+    load_all_includes file
+    >>= fun file_contents -> M.return (List.map file_contents ~f:fst)
+  ;;
 end
 
 exception Error_in_file of string * exn

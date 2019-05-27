@@ -47,3 +47,4 @@ let load_sexps_conv_exn file f =
 ;;
 
 let load_sexps file = load_sexps_conv_exn file id
+let included_files = Simple_loader.included_files
