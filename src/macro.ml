@@ -4,7 +4,7 @@ module List = Core.List
 
 exception Include_loop_detected of string
 exception Of_sexp_error = Pre_sexp.Of_sexp_error
-exception Macro_conv_error of exn * Sexp.t * [`expanded of Sexp.t]
+exception Macro_conv_error of exn * Sexp.t * [ `expanded of Sexp.t ]
 
 let () =
   let open Sexp in
@@ -26,12 +26,14 @@ let macro_error err t =
 
 type 'a conv =
   [ `Result of 'a
-  | `Error of exn * Sexp.t ]
+  | `Error of exn * Sexp.t
+  ]
 
 type 'a annot_conv =
   (* 'a Sexp.Annotated.conv = *)
   [ `Result of 'a
-  | `Error of exn * Sexp.Annotated.t ]
+  | `Error of exn * Sexp.Annotated.t
+  ]
 
 let sexp_of_conv sexp_of_a = function
   | `Result a -> Sexp.List [ Atom "Result"; a |> sexp_of_a ]
@@ -337,7 +339,8 @@ module Loader (S : Sexp_loader) = struct
 
   type mode =
     [ `Fast of Sexp.t list file_contents
-    | `Find_error of Sexp.Annotated.t list file_contents ]
+    | `Find_error of Sexp.Annotated.t list file_contents
+    ]
 
   let make_absolute_path ~with_respect_to file =
     if Filename.is_relative file

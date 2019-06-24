@@ -57,12 +57,12 @@ open Sexplib
 
 type 'a conv =
   [ `Result of 'a
-  | `Error of exn * Sexp.t ]
+  | `Error of exn * Sexp.t
+  ]
 
 val sexp_of_conv : ('a -> Sexp.t) -> 'a conv -> Sexp.t
 
-type 'a annot_conv =
-  [`Result of 'a | `Error of exn * Sexp.Annotated.t] as 'body
+type 'a annot_conv = [ `Result of 'a | `Error of exn * Sexp.Annotated.t ] as 'body
   constraint 'body = 'a Sexp.Annotated.conv
 
 val sexp_of_annot_conv : ('a -> Sexp.t) -> 'a annot_conv -> Sexp.t
