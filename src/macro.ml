@@ -113,7 +113,11 @@ end = struct
 
   and entry =
     | Value of Value.t
-    | Function of { args : string list; body : Sexp.t list; environment : t }
+    | Function of
+        { args : string list
+        ; body : Sexp.t list
+        ; environment : t
+        }
 
   let empty = M.empty
   let find key m = M.find_opt key m
