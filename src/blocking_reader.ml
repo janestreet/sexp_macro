@@ -30,21 +30,21 @@ module Simple_loader = Macro.Loader (Simple_sexp_loader)
 let id a = a
 let load_sexp_conv = Simple_loader.load_sexp_conv
 
-let load_sexp_conv_exn file f =
-  match load_sexp_conv file f with
+let load_sexp_conv_exn ?allow_includes file f =
+  match load_sexp_conv ?allow_includes file f with
   | `Result a -> a
   | `Error (exn, _) -> raise exn
 ;;
 
-let load_sexp file = load_sexp_conv_exn file id
+let load_sexp ?allow_includes file = load_sexp_conv_exn ?allow_includes file id
 let load_sexps_conv = Simple_loader.load_sexps_conv
 
-let load_sexps_conv_exn file f =
-  let results = load_sexps_conv file f in
+let load_sexps_conv_exn ?allow_includes file f =
+  let results = load_sexps_conv ?allow_includes file f in
   List.map results ~f:(function
     | `Error (exn, _) -> raise exn
     | `Result a -> a)
 ;;
 
-let load_sexps file = load_sexps_conv_exn file id
+let load_sexps ?allow_includes file = load_sexps_conv_exn ?allow_includes file id
 let included_files = Simple_loader.included_files

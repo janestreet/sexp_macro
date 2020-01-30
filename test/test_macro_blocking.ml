@@ -5,8 +5,14 @@ open Sexplib.Conv
 open Printf
 
 module type Load = sig
-  val load_sexp_conv_exn : string -> (Sexp.t -> 'a) -> 'a
-  val load_sexps_conv : string -> (Sexp.t -> 'a) -> 'a Sexp.Annotated.conv list
+  val load_sexp_conv_exn : ?allow_includes:bool -> string -> (Sexp.t -> 'a) -> 'a
+
+  val load_sexps_conv
+    :  ?allow_includes:bool
+    -> string
+    -> (Sexp.t -> 'a)
+    -> 'a Sexp.Annotated.conv list
+
   val included_files : string -> string list
 end
 
@@ -105,11 +111,11 @@ let make ?(reference : (module Load) option) (module Load : Load) =
            ; reference
            ]))
   in
-  let check ?(f = id) description files =
+  let check ?(f = id) ?allow_includes description files =
     with_files files ~f:(fun dir ->
       let filename = Filename.concat dir "input.sexp" in
       let output load =
-        match Load.included_files filename, load filename f with
+        match Load.included_files filename, load ?allow_includes filename f with
         | included_files, output ->
           let included_files = replace dir ([%sexp_of: string list] included_files) in
           [%message (output : Sexp.t) (included_files : Sexp.t)] |> sexp_to_string
@@ -386,7 +392,17 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     [ "input.sexp", "(:include include.sexp) ()"; "include.sexp", "(" ];
   check
     "value is not interpreted as code"
-    [ "input.sexp", "(:let id (x) (:use x)) (:use id (x ((:concat :us e) y)))" ]
+    [ "input.sexp", "(:let id (x) (:use x)) (:use id (x ((:concat :us e) y)))" ];
+  check
+    ~allow_includes:false
+    "can load without includes when they're forbidden"
+    [ "input.sexp", "(:let id (x) (:use x)) (:use id (x y))" ];
+  check
+    ~allow_includes:false
+    "forbidden includes raise"
+    [ "input.sexp", "(:include a.sexp) (:let id (x) (:use x)) (:use id (x y))"
+    ; "a.sexp", "(:let a_id (x) (:use x))"
+    ]
 ;;
 
 let%expect_test _ =
@@ -833,7 +849,21 @@ let%expect_test _ =
     (test "value is not interpreted as code" (
       files ((
         input.sexp ((:let id (x) (:use x)) (:use id (x ((:concat :us e) y))))))))
-    ((output (:use y)) (included_files (DIR/input.sexp))) |}]
+    ((output (:use y)) (included_files (DIR/input.sexp)))
+
+    (test
+     "can load without includes when they're forbidden"
+     (files ((input.sexp ((:let id (x) (:use x)) (:use id (x y)))))))
+    ((output y) (included_files (DIR/input.sexp)))
+
+    (test "forbidden includes raise" (
+      files (
+        (input.sexp ((:include a.sexp) (:let id (x) (:use x)) (:use id (x y))))
+        (a.sexp ((:let a_id (x) (:use x)))))))
+    (raised (
+      Of_sexp_error
+      "Error evaluating macros: include macros are not allowed"
+      (invalid_sexp (:include a.sexp)))) |}]
 ;;
 
 let%expect_test _ =

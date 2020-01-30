@@ -1,8 +1,14 @@
 open Sexplib
 
 module type Load = sig
-  val load_sexp_conv_exn : string -> (Sexp.t -> 'a) -> 'a
-  val load_sexps_conv : string -> (Sexp.t -> 'a) -> 'a Sexp.Annotated.conv list
+  val load_sexp_conv_exn : ?allow_includes:bool -> string -> (Sexp.t -> 'a) -> 'a
+
+  val load_sexps_conv
+    :  ?allow_includes:bool
+    -> string
+    -> (Sexp.t -> 'a)
+    -> 'a Sexp.Annotated.conv list
+
   val included_files : string -> string list
 end
 

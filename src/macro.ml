@@ -352,7 +352,7 @@ module Loader (S : Sexp_loader) = struct
     else file
   ;;
 
-  let load_all_includes file : Sexp.t list file_contents M.t =
+  let load_all_includes ~allow_includes file : Sexp.t list file_contents M.t =
     let file_contents = ref [] in
     let rec load visited file =
       if List.mem visited file ~equal:String.equal
@@ -365,7 +365,9 @@ module Loader (S : Sexp_loader) = struct
         file_contents := (file, ts) :: !file_contents;
         M.List.iter ts ~f:(load_includes (file :: visited) file)
     and load_includes visited file = function
-      | Sexp.List [ Sexp.Atom ":include"; Sexp.Atom include_file ] ->
+      | Sexp.List [ Sexp.Atom ":include"; Sexp.Atom include_file ] as sexp ->
+        if not allow_includes
+        then raise (macro_error "include macros are not allowed" sexp);
         let include_file = make_absolute_path ~with_respect_to:file include_file in
         load visited include_file
       | Sexp.List ts -> M.List.iter ts ~f:(load_includes visited file)
@@ -479,8 +481,8 @@ module Loader (S : Sexp_loader) = struct
        | `Result ts -> map_results ts ~f:(fun t -> locate_error (fun () -> f t)))
   ;;
 
-  let load ~multiple file f =
-    load_all_includes file
+  let load ?(allow_includes = true) ~multiple file f =
+    load_all_includes ~allow_includes file
     >>= fun file_contents ->
     try M.return (expand_and_convert ~multiple (`Fast file_contents) file f) with
     | Of_sexp_error _ as original_exn ->
@@ -499,17 +501,19 @@ module Loader (S : Sexp_loader) = struct
         raise original_exn
   ;;
 
-  let load_sexps_conv file f = load ~multiple:true file (fun v -> f (Value.to_sexp v))
+  let load_sexps_conv ?allow_includes file f =
+    load ?allow_includes ~multiple:true file (fun v -> f (Value.to_sexp v))
+  ;;
 
-  let load_sexp_conv file f =
-    load ~multiple:false file (fun v -> f (Value.to_sexp v))
+  let load_sexp_conv ?allow_includes file f =
+    load ?allow_includes ~multiple:false file (fun v -> f (Value.to_sexp v))
     >>= function
     | [ a ] -> M.return a
     | _ -> assert false
   ;;
 
   let included_files file =
-    load_all_includes file
+    load_all_includes ~allow_includes:true file
     >>= fun file_contents -> M.return (List.map file_contents ~f:fst)
   ;;
 end

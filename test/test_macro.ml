@@ -6,16 +6,17 @@ let%expect_test "macros" =
   Test_macro_blocking.make
     ~reference:(module Sexp_macro.Blocking)
     (module struct
-      let load_sexp_conv_exn file f =
-        Thread_safe.block_on_async (fun () -> Sexp_macro.load_sexp_exn file f)
+      let load_sexp_conv_exn ?allow_includes file f =
+        Thread_safe.block_on_async (fun () ->
+          Sexp_macro.load_sexp_exn ?allow_includes file f)
         |> function
         | Ok x -> x
         | Error e -> raise (Monitor.extract_exn e)
       ;;
 
-      let load_sexps_conv file f =
+      let load_sexps_conv ?allow_includes file f =
         Thread_safe.block_on_async_exn (fun () ->
-          Sexp_macro.Macro_loader.load_sexps_conv file f)
+          Sexp_macro.Macro_loader.load_sexps_conv ?allow_includes file f)
       ;;
 
       let included_files file =
@@ -170,5 +171,11 @@ let%expect_test "macros" =
       "DIR/include.sexp: Sexplib.Sexp.input_rev_sexps: reached EOF while in state Parsing_list"))
 
     (test "value is not interpreted as code")
+    Actual output agrees with reference output.
+
+    (test "can load without includes when they're forbidden")
+    Actual output agrees with reference output.
+
+    (test "forbidden includes raise")
     Actual output agrees with reference output. |}]
 ;;
