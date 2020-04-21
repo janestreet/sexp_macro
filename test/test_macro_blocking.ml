@@ -1,4 +1,4 @@
-open Expect_test_helpers_kernel
+open Expect_test_helpers_core
 open Sexp_macro
 open Sexplib
 open Sexplib.Conv
