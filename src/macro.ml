@@ -355,8 +355,7 @@ module Loader (S : Sexp_loader) = struct
   let load_all_includes ~allow_includes file : Sexp.t list file_contents M.t =
     let file_contents = ref [] in
     let rec load visited file =
-      if List.mem visited file ~equal:String.equal
-      then raise (Include_loop_detected file);
+      if List.mem visited file ~equal:String.equal then raise (Include_loop_detected file);
       if List.mem (List.map ~f:fst !file_contents) file ~equal:String.equal
       then M.return ()
       else
@@ -376,8 +375,7 @@ module Loader (S : Sexp_loader) = struct
     load [] file >>= fun () -> M.return !file_contents
   ;;
 
-  let load_all_annotated_includes file_contents : Sexp.Annotated.t list file_contents M.t
-    =
+  let load_all_annotated_includes file_contents : Sexp.Annotated.t list file_contents M.t =
     M.List.map file_contents ~f:(fun (file, _) ->
       S.load_annotated_sexps file >>= fun ts -> M.return (file, ts))
   ;;

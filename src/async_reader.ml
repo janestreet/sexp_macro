@@ -30,8 +30,7 @@ module Macro_loader = Macro.Loader (struct
     let load_annotated_sexps file =
       match%map
         Monitor.try_with ~extract_exn:true (fun () ->
-          Reader.with_file file ~f:(fun t ->
-            Pipe.to_list (Reader.read_annotated_sexps t)))
+          Reader.with_file file ~f:(fun t -> Pipe.to_list (Reader.read_annotated_sexps t)))
       with
       | Ok sexps -> sexps
       | Error e -> raise (Macro.add_error_location file e)

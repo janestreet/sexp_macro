@@ -269,15 +269,13 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     "high order function attempt"
     [ "input.sexp", "(:include include.sexp)\n       (:use g (f f))"
     ; ( "include.sexp"
-      , "(:let f (x) (:concat (:use x) (:use x)))\n       (:let g (f) (:use f (x bla)))"
-      )
+      , "(:let f (x) (:concat (:use x) (:use x)))\n       (:let g (f) (:use f (x bla)))" )
     ];
   check
     "high order function attempt 2"
     [ "input.sexp", "(:include include.sexp)\n       (:use g (f (:use f)))"
     ; ( "include.sexp"
-      , "(:let f (x) (:concat (:use x) (:use x)))\n       (:let g (f) (:use f (x bla)))"
-      )
+      , "(:let f (x) (:concat (:use x) (:use x)))\n       (:let g (f) (:use f (x bla)))" )
     ];
   (* Variable x is not used because g is never called *)
   check
@@ -326,8 +324,7 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     [ "input.sexp", "(:let x () x) (:include include.sexp)"; "include.sexp", "(:use x)" ];
   check
     ":include can cause variable capture"
-    [ ( "input.sexp"
-      , "(:let x () 2)\n         (:include include.sexp)\n         (:use x)" )
+    [ "input.sexp", "(:let x () 2)\n         (:include include.sexp)\n         (:use x)"
     ; "include.sexp", "(:let x () 1)"
     ];
   check "malformed concat" [ "input.sexp", "(:concat (a b))" ];
