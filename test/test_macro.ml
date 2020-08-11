@@ -177,5 +177,6 @@ let%expect_test "macros" =
     Actual output agrees with reference output.
 
     (test "forbidden includes raise")
-    Actual output agrees with reference output. |}]
+    Actual output agrees with reference output. |}];
+  return ()
 ;;
