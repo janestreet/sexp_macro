@@ -20,8 +20,12 @@ module Macro_loader = Macro.Loader (struct
 
     let load_sexps file =
       match%map
-        Monitor.try_with ~extract_exn:true (fun () ->
-          Reader.with_file file ~f:(fun t -> Pipe.to_list (Reader.read_sexps t)))
+        Monitor.try_with
+          ~run:
+            `Schedule
+          ~rest:`Log
+          ~extract_exn:true
+          (fun () -> Reader.with_file file ~f:(fun t -> Pipe.to_list (Reader.read_sexps t)))
       with
       | Ok sexps -> sexps
       | Error e -> raise (Macro.add_error_location file e)
@@ -29,8 +33,13 @@ module Macro_loader = Macro.Loader (struct
 
     let load_annotated_sexps file =
       match%map
-        Monitor.try_with ~extract_exn:true (fun () ->
-          Reader.with_file file ~f:(fun t -> Pipe.to_list (Reader.read_annotated_sexps t)))
+        Monitor.try_with
+          ~run:
+            `Schedule
+          ~rest:`Log
+          ~extract_exn:true
+          (fun () ->
+             Reader.with_file file ~f:(fun t -> Pipe.to_list (Reader.read_annotated_sexps t)))
       with
       | Ok sexps -> sexps
       | Error e -> raise (Macro.add_error_location file e)
@@ -51,8 +60,11 @@ let load_sexp_exn ?allow_includes file a_of_sexp =
 ;;
 
 let gen_load_sexp ?allow_includes ~file ~a_of_sexp =
-  Deferred.Or_error.try_with ~extract_exn:true (fun () ->
-    gen_load_sexp_exn ?allow_includes ~file ~a_of_sexp)
+  Deferred.Or_error.try_with
+    ~run:`Schedule
+    ~rest:`Log
+    ~extract_exn:true
+    (fun () -> gen_load_sexp_exn ?allow_includes ~file ~a_of_sexp)
 ;;
 
 let load_sexp ?allow_includes file a_of_sexp =
@@ -69,8 +81,11 @@ let load_sexps_exn ?allow_includes file a_of_sexp =
 ;;
 
 let gen_load_sexps ?allow_includes ~file ~a_of_sexp =
-  Deferred.Or_error.try_with ~extract_exn:true (fun () ->
-    gen_load_sexps_exn ?allow_includes ~file ~a_of_sexp)
+  Deferred.Or_error.try_with
+    ~run:`Schedule
+    ~rest:`Log
+    ~extract_exn:true
+    (fun () -> gen_load_sexps_exn ?allow_includes ~file ~a_of_sexp)
 ;;
 
 let load_sexps ?allow_includes file a_of_sexp =
@@ -78,5 +93,8 @@ let load_sexps ?allow_includes file a_of_sexp =
 ;;
 
 let included_files file =
-  Deferred.Or_error.try_with (fun () -> Macro_loader.included_files file)
+  Deferred.Or_error.try_with
+    ~run:`Schedule
+    ~rest:`Log
+    (fun () -> Macro_loader.included_files file)
 ;;
