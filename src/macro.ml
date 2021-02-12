@@ -200,7 +200,8 @@ let expand_local_macros_exn ~trail ts =
   let rec expand_list defs ts acc : Value.t =
     match ts with
     | (Sexp.List (Sexp.Atom ":let" :: v :: args :: def) as t) :: ts ->
-      if def = []
+      if
+        def = []
       then raise (macro_error "Empty let bodies not allowed" t);
       let v = atom v in
       let args = atoms args in
@@ -489,9 +490,10 @@ module Loader (S : Sexp_loader) = struct
       let result =
         expand_and_convert ~multiple (`Find_error annotated_file_contents) file f
       in
-      if List.exists result ~f:(function
-        | `Result _ -> false
-        | `Error _ -> true)
+      if
+        List.exists result ~f:(function
+          | `Result _ -> false
+          | `Error _ -> true)
       then M.return result
       else
         (* Avoid returning success in the case there was an error.
