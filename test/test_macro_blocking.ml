@@ -34,7 +34,7 @@ let make ?(reference : (module Load) option) (module Load : Load) =
   let module Blocking = struct end in
   let id x = x in
   let with_files files ~f =
-    let dir = Core.Filename.temp_dir "macros-test" "" in
+    let dir = Filename_unix.temp_dir "macros-test" "" in
     List.iter
       (fun (file, contents) ->
          let file_dir = Filename.concat dir (Filename.dirname file) in
