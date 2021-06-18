@@ -1,29 +1,31 @@
 open! Core
 open! Async
-open! Reader
 
 let%expect_test "macros" =
-  Test_macro_blocking.make
-    ~reference:(module Sexp_macro.Blocking)
-    (module struct
-      let load_sexp_conv_exn ?allow_includes file f =
-        Thread_safe.block_on_async (fun () ->
-          Sexp_macro.load_sexp_exn ?allow_includes file f)
-        |> function
-        | Ok x -> x
-        | Error e -> raise (Monitor.extract_exn e)
-      ;;
+  let%bind () =
+    In_thread.run (fun () ->
+      Test_macro_blocking.make
+        ~reference:(module Sexp_macro.Blocking)
+        (module struct
+          let load_sexp_conv_exn ?allow_includes file f =
+            Thread_safe.block_on_async (fun () ->
+              Sexp_macro.load_sexp_exn ?allow_includes file f)
+            |> function
+            | Ok x -> x
+            | Error e -> raise (Monitor.extract_exn e)
+          ;;
 
-      let load_sexps_conv ?allow_includes file f =
-        Thread_safe.block_on_async_exn (fun () ->
-          Sexp_macro.Macro_loader.load_sexps_conv ?allow_includes file f)
-      ;;
+          let load_sexps_conv ?allow_includes file f =
+            Thread_safe.block_on_async_exn (fun () ->
+              Sexp_macro.Macro_loader.load_sexps_conv ?allow_includes file f)
+          ;;
 
-      let included_files file =
-        Thread_safe.block_on_async_exn (fun () ->
-          Sexp_macro.Macro_loader.included_files file)
-      ;;
-    end);
+          let included_files file =
+            Thread_safe.block_on_async_exn (fun () ->
+              Sexp_macro.Macro_loader.included_files file)
+          ;;
+        end))
+  in
   [%expect
     {|
     (test simple)
