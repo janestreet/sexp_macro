@@ -51,27 +51,32 @@ let get_load_result_exn = function
   | `Error (exn, _sexp) -> raise exn
 ;;
 
-let gen_load_sexp_exn (type a) ?allow_includes ~file ~(a_of_sexp : Sexp.t -> a) =
+let gen_load_sexp_exn (type a) ~allow_includes ~file ~(a_of_sexp : Sexp.t -> a) =
   Macro_loader.load_sexp_conv ?allow_includes file a_of_sexp >>| get_load_result_exn
 ;;
 
 let load_sexp_exn ?allow_includes file a_of_sexp =
-  gen_load_sexp_exn ?allow_includes ~file ~a_of_sexp
+  gen_load_sexp_exn ~allow_includes ~file ~a_of_sexp
 ;;
 
-let gen_load_sexp ?allow_includes ~file ~a_of_sexp =
+let[@warning "-16"] gen_load_sexp ?allow_includes ~file ~a_of_sexp =
   Deferred.Or_error.try_with
     ~run:`Schedule
     ~rest:`Log
     ~extract_exn:true
-    (fun () -> gen_load_sexp_exn ?allow_includes ~file ~a_of_sexp)
+    (fun () -> gen_load_sexp_exn ~allow_includes ~file ~a_of_sexp)
 ;;
 
 let load_sexp ?allow_includes file a_of_sexp =
   gen_load_sexp ?allow_includes ~file ~a_of_sexp
 ;;
 
-let gen_load_sexps_exn (type a) ?allow_includes ~file ~(a_of_sexp : Sexp.t -> a) =
+let[@warning "-16"] gen_load_sexps_exn
+                      (type a)
+                      ?allow_includes
+                      ~file
+                      ~(a_of_sexp : Sexp.t -> a)
+  =
   Macro_loader.load_sexps_conv ?allow_includes file a_of_sexp
   >>| List.map ~f:get_load_result_exn
 ;;
@@ -80,7 +85,7 @@ let load_sexps_exn ?allow_includes file a_of_sexp =
   gen_load_sexps_exn ?allow_includes ~file ~a_of_sexp
 ;;
 
-let gen_load_sexps ?allow_includes ~file ~a_of_sexp =
+let[@warning "-16"] gen_load_sexps ?allow_includes ~file ~a_of_sexp =
   Deferred.Or_error.try_with
     ~run:`Schedule
     ~rest:`Log
