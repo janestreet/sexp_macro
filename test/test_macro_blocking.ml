@@ -32,6 +32,7 @@ let command_exn str =
 let make ?(reference : (module Load) option) (module Load : Load) =
   (* shadowing Blocking to avoid mistakenly calling it instead of Load *)
   let module Blocking = struct end in
+  let module _ = Blocking in
   let id x = x in
   let with_files files ~f =
     let dir = Filename_unix.temp_dir "macros-test" "" in
