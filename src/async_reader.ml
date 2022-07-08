@@ -21,8 +21,7 @@ module Macro_loader = Macro.Loader (struct
     let load_sexps file =
       match%map
         Monitor.try_with
-          ~run:
-            `Schedule
+          ~run:`Schedule
           ~rest:`Log
           ~extract_exn:true
           (fun () -> Reader.with_file file ~f:(fun t -> Pipe.to_list (Reader.read_sexps t)))
@@ -34,8 +33,7 @@ module Macro_loader = Macro.Loader (struct
     let load_annotated_sexps file =
       match%map
         Monitor.try_with
-          ~run:
-            `Schedule
+          ~run:`Schedule
           ~rest:`Log
           ~extract_exn:true
           (fun () ->
