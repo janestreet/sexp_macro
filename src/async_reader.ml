@@ -13,8 +13,8 @@ module Macro_loader = Macro.Loader (struct
       module Monad_infix = Deferred.Monad_infix
 
       module List = struct
-        let iter xs ~f = Deferred.List.iter xs ~f
-        let map xs ~f = Deferred.List.map xs ~f
+        let iter xs ~f = Deferred.List.iter ~how:`Sequential xs ~f
+        let map xs ~f = Deferred.List.map ~how:`Sequential xs ~f
       end
     end
 
