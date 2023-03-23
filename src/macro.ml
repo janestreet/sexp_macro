@@ -272,7 +272,9 @@ let expand_local_macros_exn ~trail ts =
           | _ :: _ ->
             raise
               (macro_error
-                 (sprintf "%s is not a function, but it was applied to arguments" (atom v))
+                 (sprintf
+                    "%s is not a function, but it was applied to arguments"
+                    (atom v))
                  t))
        | Some (Function { args = formal_args; body; environment = closure_defs }) ->
          if arg_names <> formal_args
