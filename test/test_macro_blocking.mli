@@ -1,3 +1,4 @@
+open Core
 open Sexplib
 
 module type Load = sig
@@ -7,7 +8,7 @@ module type Load = sig
     :  ?allow_includes:bool
     -> string
     -> (Sexp.t -> 'a)
-    -> 'a Sexp.Annotated.conv list
+    -> 'a list Or_error.t
 
   val included_files : string -> string list
 end

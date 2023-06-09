@@ -1,4 +1,4 @@
-open Sexplib
+open Core
 
 (**
    This module implements a limited form of evaluation within s-expressions, usually
@@ -55,21 +55,9 @@ open Sexplib
    Then [load_sexp "input.sexp"] will return "hello world".
 *)
 
-type 'a conv =
-  [ `Result of 'a
-  | `Error of exn * Sexp.t
-  ]
-
-val sexp_of_conv : ('a -> Sexp.t) -> 'a conv -> Sexp.t
-
-type 'a annot_conv = [ `Result of 'a | `Error of exn * Sexp.Annotated.t ] as 'body
-  constraint 'body = 'a Sexp.Annotated.conv
-
-val sexp_of_annot_conv : ('a -> Sexp.t) -> 'a annot_conv -> Sexp.t
-
 (** [expand_local_macros sexps] takes a list of sexps and performs macro-expansion on
     them, except that an error will be returned if an :include macro is found. *)
-val expand_local_macros : Sexp.t list -> Sexp.t list conv
+val expand_local_macros : Sexp.t list -> Sexp.t list Or_error.t
 
 (** A version of [load_sexps] that is functorized with respect to the functions
     that load the sexps from files and the corresponding monad. *)
@@ -98,13 +86,14 @@ module Loader (S : Sexp_loader) : sig
     :  ?allow_includes:bool
     -> string
     -> (Sexp.t -> 'a)
-    -> 'a annot_conv S.Monad.t
+    -> 'a Or_error.t S.Monad.t
 
+  (* Only the first error is returned. *)
   val load_sexps_conv
     :  ?allow_includes:bool
     -> string
     -> (Sexp.t -> 'a)
-    -> 'a annot_conv list S.Monad.t
+    -> 'a list Or_error.t S.Monad.t
 
   val included_files : string -> string list S.Monad.t
 end

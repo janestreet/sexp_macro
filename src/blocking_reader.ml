@@ -1,5 +1,4 @@
-open Core
-open Sexplib
+open! Core
 
 module Simple_sexp_loader = struct
   module Monad = struct
@@ -31,19 +30,14 @@ let id a = a
 let load_sexp_conv = Simple_loader.load_sexp_conv
 
 let load_sexp_conv_exn ?allow_includes file f =
-  match load_sexp_conv ?allow_includes file f with
-  | `Result a -> a
-  | `Error (exn, _) -> raise exn
+  load_sexp_conv ?allow_includes file f |> ok_exn
 ;;
 
 let load_sexp ?allow_includes file = load_sexp_conv_exn ?allow_includes file id
 let load_sexps_conv = Simple_loader.load_sexps_conv
 
 let load_sexps_conv_exn ?allow_includes file f =
-  let results = load_sexps_conv ?allow_includes file f in
-  List.map results ~f:(function
-    | `Error (exn, _) -> raise exn
-    | `Result a -> a)
+  load_sexps_conv ?allow_includes file f |> ok_exn
 ;;
 
 let load_sexps ?allow_includes file = load_sexps_conv_exn ?allow_includes file id

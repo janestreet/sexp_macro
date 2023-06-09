@@ -1,8 +1,7 @@
-open Core
+open! Core
 open Async
 
-type ('sexp, 'a, 'b) load =
-  ?allow_includes:bool -> string -> ('sexp -> 'a) -> 'b Deferred.t
+type ('a, 'b) load = ?allow_includes:bool -> string -> (Sexp.t -> 'a) -> 'b Deferred.t
 
 module Macro_loader = Macro.Loader (struct
     module Monad = struct
@@ -44,13 +43,8 @@ module Macro_loader = Macro.Loader (struct
     ;;
   end)
 
-let get_load_result_exn = function
-  | `Result x -> x
-  | `Error (exn, _sexp) -> raise exn
-;;
-
 let gen_load_sexp_exn (type a) ~allow_includes ~file ~(a_of_sexp : Sexp.t -> a) =
-  Macro_loader.load_sexp_conv ?allow_includes file a_of_sexp >>| get_load_result_exn
+  Macro_loader.load_sexp_conv ?allow_includes file a_of_sexp >>| ok_exn
 ;;
 
 let load_sexp_exn ?allow_includes file a_of_sexp =
@@ -75,8 +69,7 @@ let[@warning "-16"] gen_load_sexps_exn
                       ~file
                       ~(a_of_sexp : Sexp.t -> a)
   =
-  Macro_loader.load_sexps_conv ?allow_includes file a_of_sexp
-  >>| List.map ~f:get_load_result_exn
+  Macro_loader.load_sexps_conv ?allow_includes file a_of_sexp >>| ok_exn
 ;;
 
 let load_sexps_exn ?allow_includes file a_of_sexp =

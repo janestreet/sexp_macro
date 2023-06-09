@@ -1,3 +1,4 @@
+open Core
 open Expect_test_helpers_core
 open Sexp_macro
 open Sexplib
@@ -11,20 +12,20 @@ module type Load = sig
     :  ?allow_includes:bool
     -> string
     -> (Sexp.t -> 'a)
-    -> 'a Sexp.Annotated.conv list
+    -> 'a list Or_error.t
 
   val included_files : string -> string list
 end
 
 let () =
-  Printexc.register_printer (fun exc ->
+  Stdlib.Printexc.register_printer (fun exc ->
     match Sexplib.Conv.sexp_of_exn_opt exc with
     | None -> None
     | Some sexp -> Some (Sexp.to_string_hum ~indent:2 sexp))
 ;;
 
 let command_exn str =
-  match Sys.command str with
+  match Stdlib.Sys.command str with
   | 0 -> ()
   | code -> failwith (sprintf "command %S exited with code %d" str code)
 ;;
@@ -37,12 +38,12 @@ let make ?(reference : (module Load) option) (module Load : Load) =
   let with_files files ~f =
     let dir = Filename_unix.temp_dir "macros-test" "" in
     List.iter
-      (fun (file, contents) ->
-         let file_dir = Filename.concat dir (Filename.dirname file) in
-         command_exn ("mkdir -p " ^ file_dir);
-         let out_channel = open_out (Filename.concat dir file) in
-         output_string out_channel (contents ^ "\n");
-         close_out out_channel)
+      ~f:(fun (file, contents) ->
+        let file_dir = Filename.concat dir (Filename.dirname file) in
+        command_exn ("mkdir -p " ^ file_dir);
+        let out_channel = Out_channel.create (Filename.concat dir file) in
+        Out_channel.output_string out_channel (contents ^ "\n");
+        Out_channel.close out_channel)
       files;
     let tear_down () = command_exn ("rm -rf -- " ^ dir) in
     try
@@ -60,15 +61,15 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     let rec loop str i =
       if i + String.length sub < String.length str
       then
-        if String.sub str i (String.length sub) = sub
+        if String.sub str ~pos:i ~len:(String.length sub) = sub
         then (
           let str =
-            String.sub str 0 i
+            String.sub str ~pos:0 ~len:i
             ^ by
             ^ String.sub
                 str
-                (i + String.length sub)
-                (String.length str - i - String.length sub)
+                ~pos:(i + String.length sub)
+                ~len:(String.length str - i - String.length sub)
           in
           loop str i)
         else loop str (i + 1)
@@ -88,11 +89,11 @@ let make ?(reference : (module Load) option) (module Load : Load) =
   let print_header description files =
     let files =
       List.map
-        (fun (file, contents) ->
-           match Sexp.of_string (String.concat "" [ "("; contents; ")" ]) with
-           | Atom _ -> assert false
-           | List contents -> [%sexp (file : string), (contents : Sexp.t list)]
-           | exception _ -> [%sexp (file : string), (contents : string)])
+        ~f:(fun (file, contents) ->
+          match Sexp.of_string (String.concat ~sep:"" [ "("; contents; ")" ]) with
+          | Atom _ -> assert false
+          | List contents -> [%sexp (file : string), (contents : Sexp.t list)]
+          | exception _ -> [%sexp (file : string), (contents : string)])
         files
     in
     print_s [%message "test" description (files : Sexp.t list)]
@@ -133,13 +134,13 @@ let make ?(reference : (module Load) option) (module Load : Load) =
           ~files
           ~actual
           ~reference:(output Reference.load_sexp_conv_exn));
-    print_newline ()
+    Out_channel.newline stdout
   in
   let check_error_count description ~f files =
     with_files files ~f:(fun dir ->
       let output load =
         let results = load (Filename.concat dir "input.sexp") f in
-        replace_to_string dir [%sexp (results : _ Sexp.Annotated.conv list)]
+        replace_to_string dir [%sexp (results : _ list Or_error.t)]
       in
       let actual = output Load.load_sexps_conv in
       match reference with
@@ -152,7 +153,7 @@ let make ?(reference : (module Load) option) (module Load : Load) =
           ~files
           ~actual
           ~reference:(output Reference.load_sexps_conv));
-    print_newline ()
+    Out_channel.newline stdout
   in
   check
     "simple"
@@ -349,11 +350,12 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     ; "b", "something invalid like :concat"
     ];
   check "empty let body" [ "input.sexp", "\n(:let f ())" ];
+  check "multiple sexps" [ "input.sexp", "a b" ];
   let rec conv_error = function
     | Sexp.List [ Sexp.Atom "trigger"; Sexp.Atom "error" ] as t ->
       raise (Pre_sexp.Of_sexp_error (Exit, t))
     | Sexp.Atom _ -> ()
-    | Sexp.List ts -> List.iter conv_error ts
+    | Sexp.List ts -> List.iter ~f:conv_error ts
   in
   let conv_error sexp =
     conv_error sexp;
@@ -365,8 +367,9 @@ let make ?(reference : (module Load) option) (module Load : Load) =
     [ "input.sexp", "(:include include.sexp)"
     ; "include.sexp", "(:let err () error) (foo bar (trigger (:use err)))"
     ];
+  (* Only the first error is reported. *)
   check_error_count
-    "multiple conversion errors"
+    "multiple conversion errors - only first one is reported"
     ~f:conv_error
     [ "input.sexp", "(:include include.sexp) (:include include.sexp)"
     ; "include.sexp", "(:let err () error) (foo bar (trigger (:use err)))"
@@ -785,48 +788,44 @@ let%expect_test _ =
       "Error evaluating macros: Empty let bodies not allowed"
       (invalid_sexp (:let f ()))))
 
+    (test "multiple sexps" (files ((input.sexp (a b)))))
+    (raised (
+      Failure "wrong number of sexps in DIR/input.sexp, expecting 1, got 2"))
+
     (test "error location for conversion errors" (
       files (
         (input.sexp ((:include include.sexp)))
         (include.sexp ((:let err () error) (foo bar (trigger (:use err))))))))
     (raised (
-      Sexp_macro.Macro_conv_error (
-        (Of_sexp_error DIR/include.sexp:1:29 Exit)
-        (trigger  (:use    err))
-        (expanded (trigger error)))))
+      macro.ml.Macro_conv_error
+      (Of_sexp_error DIR/include.sexp:1:29 Exit)
+      (trigger  (:use    err))
+      (expanded (trigger error))))
 
-    (test "multiple conversion errors" (
-      files (
-        (input.sexp (
-          (:include include.sexp)
-          (:include include.sexp)))
-        (include.sexp ((:let err () error) (foo bar (trigger (:use err))))))))
-    ((Error (
-       (Sexp_macro.Macro_conv_error (
-         (Of_sexp_error DIR/include.sexp:1:29 Exit)
-         (trigger  (:use    err))
-         (expanded (trigger error))))
-       (trigger (:use err))))
-     (Error (
-       (Sexp_macro.Macro_conv_error (
-         (Of_sexp_error DIR/include.sexp:1:29 Exit)
-         (trigger  (:use    err))
-         (expanded (trigger error))))
-       (trigger (:use err)))))
+    (test
+     "multiple conversion errors - only first one is reported"
+     (files (
+       (input.sexp (
+         (:include include.sexp)
+         (:include include.sexp)))
+       (include.sexp ((:let err () error) (foo bar (trigger (:use err))))))))
+    (Error (
+      macro.ml.Macro_conv_error
+      (Of_sexp_error DIR/include.sexp:1:29 Exit)
+      (trigger  (:use    err))
+      (expanded (trigger error))))
 
     (test "include loop" (
       files (
         (input.sexp   ((:include include.sexp)))
         (include.sexp ((:include include.sexp))))))
-    (raised ("Sexp_macro__Macro.Include_loop_detected(\"DIR/include.sexp\")"))
+    (raised (macro.ml.Include_loop_detected DIR/include.sexp))
 
     (test "sneaky include loop" (
       files (
         (input.sexp   ((:include include.sexp)))
         (include.sexp ((:include ././include.sexp))))))
-    (raised (
-      "Error in file DIR/include.sexp" (
-        Sys_error "DIR/include.sexp: File name too long")))
+    (raised (macro.ml.Include_loop_detected DIR/include.sexp))
 
     (test "parsing error 1" (
       files ((input.sexp ((:include include.sexp) ())) (include.sexp ")"))))
@@ -868,7 +867,7 @@ let%expect_test _ =
   print_s
     [%sexp
       (Sexp_macro.expand_local_macros [ Sexp.of_string "(:use x)" ]
-       : Sexp.t list Sexp_macro.conv)];
+       : Sexp.t list Or_error.t)];
   [%expect {|
     (Error ((Failure "Error evaluating macros: Undefined variable") x)) |}]
 ;;

@@ -1,4 +1,4 @@
-open Sexplib
+open! Core
 
 (**
    The [load...] functions of this module mirror the corresponding functions of
@@ -22,19 +22,16 @@ val load_sexps : ?allow_includes:bool -> string -> Sexp.t list
 
 (** [load_sexp_conv file f] uses {!load_sexp} and converts the result using
     [f]. *)
-val load_sexp_conv
-  :  ?allow_includes:bool
-  -> string
-  -> (Sexp.t -> 'a)
-  -> 'a Macro.annot_conv
+val load_sexp_conv : ?allow_includes:bool -> string -> (Sexp.t -> 'a) -> 'a Or_error.t
 
 (** [load_sexps_conv file f] uses {!load_sexps} and converts the result using
     [f]. *)
+
 val load_sexps_conv
   :  ?allow_includes:bool
   -> string
   -> (Sexp.t -> 'a)
-  -> 'a Macro.annot_conv list
+  -> 'a list Or_error.t
 
 (** [load_sexp_conv_exn file f] like {!load_sexp_conv}, but raises an exception
     in case of conversion error. *)
