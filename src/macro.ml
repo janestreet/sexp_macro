@@ -173,8 +173,7 @@ let expand_local_macros_exn ~trail ts =
   let rec expand_list defs ts acc : Value.t =
     match ts with
     | (Sexp.List (Sexp.Atom ":let" :: v :: args :: def) as t) :: ts ->
-      if List.is_empty def
-      then raise (macro_error "Empty let bodies not allowed" t);
+      if List.is_empty def then raise (macro_error "Empty let bodies not allowed" t);
       let v = atom v in
       let args = atoms args in
       let free = free_variables def in
@@ -512,9 +511,9 @@ let () =
     ~finalise:false
     [%extension_constructor Error_in_file]
     (function
-      | Error_in_file (file, exn) ->
-        Sexp.List [ Sexp.Atom ("Error in file " ^ file); Sexplib.Conv.sexp_of_exn exn ]
-      | _ -> assert false)
+    | Error_in_file (file, exn) ->
+      Sexp.List [ Sexp.Atom ("Error in file " ^ file); Sexplib.Conv.sexp_of_exn exn ]
+    | _ -> assert false)
 ;;
 
 let add_error_location file = function

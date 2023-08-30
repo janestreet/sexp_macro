@@ -867,7 +867,7 @@ let%expect_test _ =
   print_s
     [%sexp
       (Sexp_macro.expand_local_macros [ Sexp.of_string "(:use x)" ]
-       : Sexp.t list Or_error.t)];
+        : Sexp.t list Or_error.t)];
   [%expect {|
     (Error ((Failure "Error evaluating macros: Undefined variable") x)) |}]
 ;;
