@@ -1,2 +1,6 @@
-(library (name sexp_macro) (public_name sexp_macro)
- (libraries sexplib core async) (preprocess (pps ppx_jane)))
+(library
+ (name sexp_macro)
+ (public_name sexp_macro)
+ (libraries sexplib core async)
+ (preprocess
+  (pps ppx_jane)))
