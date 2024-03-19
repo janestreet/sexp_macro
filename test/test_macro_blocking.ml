@@ -860,7 +860,8 @@ let%expect_test _ =
     (raised (
       Of_sexp_error
       "Error evaluating macros: include macros are not allowed"
-      (invalid_sexp (:include a.sexp)))) |}]
+      (invalid_sexp (:include a.sexp))))
+    |}]
 ;;
 
 let%expect_test _ =
@@ -868,6 +869,5 @@ let%expect_test _ =
     [%sexp
       (Sexp_macro.expand_local_macros [ Sexp.of_string "(:use x)" ]
         : Sexp.t list Or_error.t)];
-  [%expect {|
-    (Error ((Failure "Error evaluating macros: Undefined variable") x)) |}]
+  [%expect {| (Error ((Failure "Error evaluating macros: Undefined variable") x)) |}]
 ;;
