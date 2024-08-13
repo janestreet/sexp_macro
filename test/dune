@@ -1,5 +1,6 @@
 (library
  (name sexp_macro_test)
- (libraries core expect_test_helpers_core core_unix.filename_unix sexp_macro)
+ (libraries async core expect_test_helpers_core core_unix.filename_unix
+   sexp_macro sexplib)
  (preprocess
   (pps ppx_jane)))
