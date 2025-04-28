@@ -18,7 +18,7 @@ module type Load = sig
 end
 
 let () =
-  Stdlib.Printexc.register_printer (fun exc ->
+  (Stdlib.Printexc.register_printer [@ocaml.alert "-unsafe_multidomain"]) (fun exc ->
     match Sexplib.Conv.sexp_of_exn_opt exc with
     | None -> None
     | Some sexp -> Some (Sexp.to_string_hum ~indent:2 sexp))
