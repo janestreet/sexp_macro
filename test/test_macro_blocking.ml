@@ -55,8 +55,8 @@ let make ?(reference : (module Load) option) (module Load : Load) =
       tear_down ();
       raise e
   in
-  (* Not quite the same as [Str] functions because it reapplies itself, see the
-     use below to eliminate "/./././...". *)
+  (* Not quite the same as [Str] functions because it reapplies itself, see the use below
+     to eliminate "/./././...". *)
   let replace ~sub ~by str =
     let rec loop str i =
       if i + String.length sub < String.length str

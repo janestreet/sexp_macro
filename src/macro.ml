@@ -98,9 +98,9 @@ end = struct
   let mem key m = Map.mem m key
 end
 
-(* A physical association list mapping sexps after :include are inlined to sexps
-   that they originate from.  This map allows us to recover the original sexp
-   that gave rise to an error and to give a precise error location. *)
+(* A physical association list mapping sexps after :include are inlined to sexps that they
+   originate from. This map allows us to recover the original sexp that gave rise to an
+   error and to give a precise error location. *)
 type trail = (Sexp.t * Sexp.t) list
 
 let rec find_arg result trail =
@@ -212,8 +212,8 @@ let expand_local_macros_exn ~trail ts =
               ; body = def
               ; environment =
                   defs
-                  (* technically we leak memory by using the whole [defs] but
-                     it's unlikely that anyone would ever notice. *)
+                  (* technically we leak memory by using the whole [defs] but it's
+                     unlikely that anyone would ever notice. *)
               })
            defs)
         ts
@@ -231,8 +231,8 @@ let expand_local_macros_exn ~trail ts =
         | arg -> raise (macro_error "Malformed argument" arg)
       in
       let evaluate_and_bind arg_defs (v, def) =
-        (* It is important we evaluate with respect to defs here, to avoid one
-           argument shadowing the next one. *)
+        (* It is important we evaluate with respect to defs here, to avoid one argument
+           shadowing the next one. *)
         let def = expand_list defs def [] in
         Bindings.set v (Value def) arg_defs
       in
@@ -367,9 +367,9 @@ module Loader (S : Sexp_loader) = struct
   ;;
 
   (* This function has to compute a transformation trail even though all of the returned
-     errors are of the form [Of_sexp_error (_, t)] where [t] is a physical subexpression of
-     the input, in the event where an error happens not during macro expansion but during
-     conversion to ocaml values. *)
+     errors are of the form [Of_sexp_error (_, t)] where [t] is a physical subexpression
+     of the input, in the event where an error happens not during macro expansion but
+     during conversion to ocaml values. *)
   let expand_and_convert ~multiple (mode : mode) file f =
     let trail = ref ([] : trail) in
     let add_result ~arg ~result =
@@ -388,8 +388,8 @@ module Loader (S : Sexp_loader) = struct
     in
     let rec inline_includes current_file = function
       | Sexp.Atom _ as t -> [ t ]
-      (* We expand an :include in list context, because that corresponds to
-         the naive string substitution semantics. *)
+      (* We expand an :include in list context, because that corresponds to the naive
+         string substitution semantics. *)
       | Sexp.List [ Sexp.Atom ":include"; Sexp.Atom include_file ] ->
         load_and_inline (make_absolute_path ~with_respect_to:current_file include_file)
       | Sexp.List ts as t ->
@@ -405,10 +405,10 @@ module Loader (S : Sexp_loader) = struct
           (List.Assoc.find_exn file_contents file ~equal:String.equal)
           ~f:(inline_includes file)
       in
-      (* This checks that, after expanding the includes of file1, file1 doesn't
-         have any free variables. So if file1 is included in file2, it won't use
-         any of the variable of file2 in scope where file1 is included.
-         However, the inclusion of file1 may shadow variables from file2. *)
+      (* This checks that, after expanding the includes of file1, file1 doesn't have any
+         free variables. So if file1 is included in file2, it won't use any of the
+         variable of file2 in scope where file1 is included. However, the inclusion of
+         file1 may shadow variables from file2. *)
       check_no_free_variables ts;
       ts
     in
@@ -480,8 +480,8 @@ module Loader (S : Sexp_loader) = struct
        with
        | Error _ as e -> e
        | Ok _ ->
-         (* Avoid returning success in the case there was an error.
-            This can be bad e.g. when reading the input from a pipe. *)
+         (* Avoid returning success in the case there was an error. This can be bad e.g.
+            when reading the input from a pipe. *)
          raise original_exn)
   ;;
 
