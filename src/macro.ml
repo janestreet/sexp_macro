@@ -412,9 +412,9 @@ module Loader (S : Sexp_loader) = struct
       check_no_free_variables ts;
       ts
     in
-    (* We stop at first error. Finding an error is linear in the size of the
-       input due to the way we use [trail], so finding all errors would be
-       quadratic. This caused an issue in practice at least once.  *)
+    (* We stop at first error. Finding an error is linear in the size of the input due to
+       the way we use [trail], so finding all errors would be quadratic. This caused an
+       issue in practice at least once. *)
     let all_ok_or_first_error ts ~f =
       with_return (fun { return } ->
         Ok
